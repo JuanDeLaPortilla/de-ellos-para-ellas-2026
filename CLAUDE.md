@@ -17,6 +17,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Architecture
 
 - **Routing**: `src/App.jsx` uses react-router with a shared `Layout`. Routes: `/` (Invitation), `/confirmar`, `/mural`, `/admin`; unknown paths render Invitation. There is no top navigation bar: the photo wall is shared by direct URL (`/mural`) and the map opens from the "?" button next to "LUGAR". GitHub Pages SPA fallback is handled by `public/404.html` (`pathSegmentsToKeep`). `VITE_BASE` sets the Vite base path (computed by the deploy workflow from the repo name).
+- **Envelope intro**: on `/`, `src/components/Envelope.jsx` shows a closed envelope until the visitor taps it; `Invitation.jsx` then runs the opening animation (CSS keyframes in `src/index.css`, only `transform`/`opacity`) and stores `envelope-opened:v1` in `localStorage` at the moment of the tap. With the key present there is no envelope: the card shows directly and only the text cascade plays on load, plus a small "Ver animación otra vez" button. Bump the key to `:v2` to make everyone see the envelope again.
+- **Music**: the single `<audio>` lives in `MusicProvider` (`src/lib/music.jsx`, exposed through `useMusic()`). It never autoplays: it starts only from a user gesture (the music button or the envelope tap).
 - **Event data** lives in `src/config/event.config.js`; change the date or venue there only.
 - **Backend glue** is in `src/lib/` (`firebase.js`, `rsvp.js`, `email.js`, `cloudinary.js`, `useAuthUser.js`). All config comes from `VITE_*` env vars.
 - **All security is enforced by `firestore.rules`**, since the client is public. The data model spans the rules and several files:
