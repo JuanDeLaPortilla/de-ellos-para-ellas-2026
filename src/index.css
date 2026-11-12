@@ -143,6 +143,17 @@
   animation: backdrop-in 0.3s ease-out both;
 }
 
+/* Photo upload modal (SPEC 07): full screen up to 640px; from `sm` it is a centered card via utilities. */
+@media (max-width: 639.98px) {
+  .modal-fullscreen {
+    width: 100dvw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+  }
+}
+
 .modal-dialog[data-closing='true'] {
   animation: modal-out 0.22s ease-in both;
 }

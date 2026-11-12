@@ -1,18 +1,34 @@
 import { useEffect, useRef, useState } from 'react'
-import { signInAnonymously } from 'firebase/auth'
-import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore'
+import { collection, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { FloralDivider } from '../components/decor/Flora.jsx'
-import { auth, db, firebaseReady } from '../lib/firebase.js'
-import { normalizeEmail } from '../lib/rsvp.js'
-import { cloudinaryReady, uploadPhoto } from '../lib/cloudinary.js'
-import { markSessionRedeemed, useAuthUser } from '../lib/useAuthUser.js'
+import PhotoUploadModal from '../components/PhotoUploadModal.jsx'
+import { db, firebaseReady } from '../lib/firebase.js'
+import { useAuthUser } from '../lib/useAuthUser.js'
 
 const ADMIN_AUTHOR = 'Organizadores'
+const COLUMN_WIDTH = 272
+const GAP = 12
+
+// Number of fixed-width columns that fit in the element, so leftover space can be centered.
+function useColumnCount(ref) {
+  const [count, setCount] = useState(2)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return undefined
+    const update = () => setCount(Math.max(2, Math.floor((el.clientWidth + GAP) / (COLUMN_WIDTH + GAP))))
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ref])
+  return count
+}
 
 export default function PhotoWall() {
   const { status, isAdmin, hasSession } = useAuthUser()
   // Set right after a successful redeem, before the auth hook re-reads the session.
   const [redeemedName, setRedeemedName] = useState(null)
+  const [uploadOpen, setUploadOpen] = useState(false)
 
   if (!firebaseReady) {
     return (
@@ -27,142 +43,35 @@ export default function PhotoWall() {
   const authorName = isAdmin ? ADMIN_AUTHOR : (redeemedName ?? 'Invitada')
 
   return (
-    <div className="grid gap-8">
-      <section className="card text-center">
+    <div className="grid gap-8 2xl:gap-14">
+      <div className="text-center">
         <h1 className="heading">Mural de fotos</h1>
         <FloralDivider width={240} className="mt-3" />
-        <p className="mt-4">Los recuerdos de la noche, compartidos por todas.</p>
-
-        <div className="mt-8">
-          {status === 'loading' ? (
-            <p>Cargando…</p>
-          ) : canUpload ? (
-            <PhotoUploader authorName={authorName} />
-          ) : (
-            <RedeemForm onRedeemed={setRedeemedName} />
-          )}
-        </div>
-      </section>
+      </div>
 
       <Gallery />
-    </div>
-  )
-}
 
-function RedeemForm({ onRedeemed }) {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [code, setCode] = useState('')
-  const [state, setState] = useState('idle') // idle | checking | error
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setState('checking')
-    try {
-      const credential = auth.currentUser ?? (await signInAnonymously(auth)).user
-      await setDoc(doc(db, 'sessions', credential.uid), {
-        email: normalizeEmail(email),
-        code: code.trim().toUpperCase(),
-        createdAt: serverTimestamp(),
-      })
-      markSessionRedeemed(credential.uid)
-      onRedeemed(name.trim() || 'Invitada')
-    } catch {
-      // The rules reject wrong codes, unknown emails and guests who are not attending.
-      setState('error')
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="mx-auto grid max-w-md gap-4 text-left">
-      <p className="text-center">
-        Si confirmaste tu asistencia, escribe tu correo y el código que te enviamos para subir fotos.
-      </p>
-      <label className="grid gap-1">
-        <span className="text-sm tracking-wide text-plum-soft uppercase">Tu nombre</span>
-        <input
-          className="field"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={60}
-          autoComplete="given-name"
-        />
-      </label>
-      <label className="grid gap-1">
-        <span className="text-sm tracking-wide text-plum-soft uppercase">Correo electrónico</span>
-        <input
-          className="field"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-        />
-      </label>
-      <label className="grid gap-1">
-        <span className="text-sm tracking-wide text-plum-soft uppercase">Código de acceso</span>
-        <input
-          className="field tracking-[0.3em] uppercase"
-          required
-          maxLength={8}
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          autoComplete="off"
-        />
-      </label>
-      {state === 'error' && (
-        <p role="alert" className="rounded-xl bg-rose-pale p-3 text-center text-sm text-red-800">
-          El correo o el código no son correctos, o aún no has confirmado tu asistencia.
-        </p>
-      )}
-      <button className="btn" type="submit" disabled={state === 'checking'}>
-        {state === 'checking' ? 'Verificando…' : 'Desbloquear subida'}
+      {/* Sits above the music button (bottom-4, 48px) so the two never overlap. */}
+      <button
+        type="button"
+        aria-label="Subir una foto"
+        onClick={() => setUploadOpen(true)}
+        className="fixed right-4 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 flex h-12 w-12 items-center justify-center rounded-full border border-gold bg-plum text-paper shadow-lg transition hover:bg-plum-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
       </button>
-    </form>
-  )
-}
 
-function PhotoUploader({ authorName }) {
-  const inputRef = useRef(null)
-  const [state, setState] = useState('idle') // idle | uploading | done | error
-
-  async function handleChange(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setState('uploading')
-    try {
-      await uploadPhoto(file, authorName)
-      setState('done')
-    } catch {
-      setState('error')
-    } finally {
-      if (inputRef.current) inputRef.current.value = ''
-    }
-  }
-
-  if (!cloudinaryReady) {
-    return <p>La subida de fotos aún no está disponible.</p>
-  }
-
-  return (
-    <div className="grid justify-items-center gap-3">
-      <input
-        ref={inputRef}
-        id="photo-input"
-        type="file"
-        accept="image/*"
-        className="sr-only"
-        onChange={handleChange}
-        disabled={state === 'uploading'}
-      />
-      <label htmlFor="photo-input" className={`btn cursor-pointer ${state === 'uploading' ? 'opacity-60' : ''}`}>
-        {state === 'uploading' ? 'Subiendo…' : 'Subir una foto'}
-      </label>
-      <p aria-live="polite" className="text-sm">
-        {state === 'done' && '¡Listo! Tu foto ya está en el mural.'}
-        {state === 'error' && 'No pudimos subir la foto. Inténtalo de nuevo.'}
-        {state === 'idle' && `Publicarás como «${authorName}».`}
-      </p>
+      {uploadOpen && (
+        <PhotoUploadModal
+          onClose={() => setUploadOpen(false)}
+          canUpload={canUpload}
+          authLoading={status === 'loading'}
+          authorName={authorName}
+          onRedeemed={setRedeemedName}
+        />
+      )}
     </div>
   )
 }
@@ -170,6 +79,8 @@ function PhotoUploader({ authorName }) {
 function Gallery() {
   const [photos, setPhotos] = useState([])
   const [loaded, setLoaded] = useState(false)
+  const listRef = useRef(null)
+  const columnCount = useColumnCount(listRef)
 
   useEffect(() => {
     const q = query(collection(db, 'photos'), orderBy('createdAt', 'desc'))
@@ -187,14 +98,22 @@ function Gallery() {
     return <p className="text-center">Todavía no hay fotos. ¡Sé la primera en subir una!</p>
   }
 
+  // Round-robin keeps the newest-first order reading left to right, row by row.
+  const columns = Array.from({ length: columnCount }, () => [])
+  photos.forEach((photo, i) => columns[i % columnCount].push(photo))
+  // Below `sm` the layout is two fluid columns; from `sm` on, fixed-width columns centered.
   return (
-    <ul className="columns-2 gap-3 sm:columns-3">
-      {photos.map((photo) => (
-        <li key={photo.id} className="mb-3 break-inside-avoid overflow-hidden rounded-2xl border border-rose/30 bg-paper">
-          <img src={photo.url} alt={`Foto de ${photo.authorName}`} loading="lazy" className="w-full" />
-          <p className="px-3 py-2 text-xs text-plum-soft">{photo.authorName}</p>
-        </li>
+    <div ref={listRef} className="flex justify-center gap-3">
+      {columns.filter((column) => column.length > 0).map((column, i) => (
+        <ul key={i} className="flex w-[calc(50%-0.375rem)] flex-none flex-col gap-3 sm:w-68">
+          {column.map((photo) => (
+            <li key={photo.id} className="overflow-hidden rounded-2xl border border-rose/30 bg-paper">
+              <img src={photo.url} alt={`Foto de ${photo.authorName}`} loading="lazy" className="w-full" />
+              <p className="px-3 py-2 text-xs text-plum-soft">{photo.authorName}</p>
+            </li>
+          ))}
+        </ul>
       ))}
-    </ul>
+    </div>
   )
 }
