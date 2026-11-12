@@ -59,7 +59,8 @@ Falta añadir la pista: sigue las instrucciones de `public/audio/CREDITS.txt` y 
 1. En GitHub: *Settings → Pages → Source*: **GitHub Actions**.
 2. *Settings → Secrets and variables → Actions → Variables*: crea una variable por cada `VITE_*` de `.env.example`
    (excepto `VITE_BASE`, que el workflow calcula desde el nombre del repo).
-3. Haz push a `develop` (la rama principal): el workflow `.github/workflows/deploy.yml` compila y publica.
+3. Trabaja en `develop` (no publica nada). Para publicar, fusiona `develop` en `main` y haz push a `main`: el workflow
+   `.github/workflows/deploy.yml` compila y publica. `main` es la rama de producción y la única admitida por el entorno `github-pages`.
 4. Abre `https://<usuario>.github.io/<repo>/confirmar` y recarga: debe seguir abriendo (gracias a `404.html`).
 
 Si usas un dominio propio en la raíz, cambia `pathSegmentsToKeep` a `0` en `public/404.html` y usa `VITE_BASE=/`.

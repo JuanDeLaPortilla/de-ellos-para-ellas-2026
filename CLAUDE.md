@@ -30,5 +30,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Gotchas
 
 - The repo is public and every `VITE_*` value ends up in the published JS. Never add the Cloudinary API secret or any admin password.
-- `develop` is the main branch (there is no `main`); pushes to `develop` deploy via `.github/workflows/deploy.yml`; the `VITE_*` values come from GitHub Actions *Variables*, not secrets.
+- `main` is the production branch and the repo default: only pushes to `main` deploy via `.github/workflows/deploy.yml` (the `github-pages` environment only admits `main`). `develop` is the development branch and does not deploy; publish by merging `develop` into `main` and pushing. The `VITE_*` values come from GitHub Actions *Variables*, not secrets.
 - Background music (`public/audio/background-loop.mp3`) is intentionally not committed yet; see `public/audio/CREDITS.txt`.
