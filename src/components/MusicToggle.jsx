@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const AUDIO_SRC = `${import.meta.env.BASE_URL}audio/background-loop.mp3`
 
@@ -6,6 +6,11 @@ const AUDIO_SRC = `${import.meta.env.BASE_URL}audio/background-loop.mp3`
 export default function MusicToggle() {
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
+  const [volume, setVolume] = useState(0.5)
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume
+  }, [volume])
 
   async function toggle() {
     const audio = audioRef.current
@@ -26,20 +31,32 @@ export default function MusicToggle() {
   return (
     <>
       <audio ref={audioRef} src={AUDIO_SRC} loop preload="none" />
-      <button
-        type="button"
-        onClick={toggle}
-        aria-pressed={playing}
-        aria-label={playing ? 'Silenciar la música' : 'Activar la música'}
-        className="fixed right-4 bottom-4 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-gold bg-paper text-plum shadow-md transition hover:bg-rose-pale focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum"
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M9 18V5l11-2v13" />
-          <circle cx="6" cy="18" r="3" />
-          <circle cx="17" cy="16" r="3" />
-          {!playing && <path d="M3 3l18 18" />}
-        </svg>
-      </button>
+      <div className="fixed right-4 bottom-4 z-30 flex items-center gap-3">
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={volume}
+          onChange={(e) => setVolume(Number(e.target.value))}
+          aria-label="Volumen de la música"
+          className="h-2 w-24 cursor-pointer accent-plum"
+        />
+        <button
+          type="button"
+          onClick={toggle}
+          aria-pressed={playing}
+          aria-label={playing ? 'Silenciar la música' : 'Activar la música'}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-gold bg-paper text-plum shadow-md transition hover:bg-rose-pale focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 18V5l11-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="17" cy="16" r="3" />
+            {!playing && <path d="M3 3l18 18" />}
+          </svg>
+        </button>
+      </div>
     </>
   )
 }

@@ -71,7 +71,7 @@ Si usas un dominio propio en la raíz, cambia `pathSegmentsToKeep` a `0` en `pub
 | ------------ | --------------------------------------------------- |
 | `/`          | Invitación, cuenta regresiva y lugar                |
 | `/confirmar` | Formulario de asistencia                            |
-| `/mural`     | Galería en vivo; subida con código o como admin     |
+| `/mural`     | Galería en vivo; subida con código o como admin (se comparte por URL directa, no hay barra de navegación) |
 | `/admin`     | Login, lista de confirmaciones y totales            |
 
 ## Moderación
