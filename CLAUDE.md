@@ -25,10 +25,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - `sessions/{uid}`: an anonymous-auth user redeems a code by creating a session whose `email` and `code` match an attending RSVP (checked in the rules via `get()`). Holding a session is what allows uploading to the photo wall.
   - `photos`: public read; create requires a session or admin and a `https://res.cloudinary.com/` URL. Images are uploaded to Cloudinary first, then the metadata is written to Firestore. Never update or delete from the client.
   - `admins/{uid}`: created by hand in the Firebase console; the admin is an email/password Auth user whose UID has a document here.
-- When adding or changing fields on `rsvps` or `photos`, update both the client code and the `hasOnly` key lists and validators in `firestore.rules`. The rules must then be republished manually in the Firebase console; they are not deployed by CI.
+- When adding or changing fields on `rsvps` or `photos`, update both the client code and the `hasOnly` key lists and validators in `firestore.rules`. The rules must then be redeployed manually with `npx firebase-tools deploy --only firestore:rules` (`firebase.json` and `.firebaserc` are versioned); they are not deployed by CI.
 
 ## Gotchas
 
 - The repo is public and every `VITE_*` value ends up in the published JS. Never add the Cloudinary API secret or any admin password.
-- Pushes to `main` deploy via `.github/workflows/deploy.yml`; the `VITE_*` values come from GitHub Actions *Variables*, not secrets.
+- `develop` is the main branch (there is no `main`); pushes to `develop` deploy via `.github/workflows/deploy.yml`; the `VITE_*` values come from GitHub Actions *Variables*, not secrets.
 - Background music (`public/audio/background-loop.mp3`) is intentionally not committed yet; see `public/audio/CREDITS.txt`.

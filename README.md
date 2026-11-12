@@ -22,7 +22,9 @@ npm run dev
 2. **Firestore Database** → crear base de datos en modo producción.
 3. **Authentication** → *Sign-in method*: activa **Anónimo** y **Correo/contraseña**.
 4. **Configuración del proyecto → Tus apps → Web**: registra una app y copia los valores a `VITE_FIREBASE_*`.
-5. **Reglas**: en Firestore → *Reglas*, pega el contenido de `firestore.rules` y publica.
+5. **Reglas**: se despliegan con Firebase CLI (`firebase.json` y `.firebaserc` ya están en el repo):
+   `npx firebase-tools login` (una vez) y luego `npx firebase-tools deploy --only firestore:rules`.
+   No se despliegan desde CI: repite el comando cada vez que cambies `firestore.rules`.
 6. **Crear el usuario admin** (paso obligatorio):
    1. Authentication → *Users* → *Add user*: correo y una contraseña larga y única.
    2. Copia el **UID** de ese usuario.
@@ -41,7 +43,7 @@ Para cambiar la contraseña del admin, hazlo en la consola de Firebase; no hay q
 
 ## 3. EmailJS
 
-1. Crea una cuenta en <https://www.emailjs.com> (plan gratuito: confirma el límite mensual de correos).
+1. Crea una cuenta en <https://www.emailjs.com> (plan gratuito: **200 correos al mes**; cada confirmación envía un correo).
 2. *Email Services*: conecta una cuenta de correo y copia el *Service ID* a `VITE_EMAILJS_SERVICE_ID`.
 3. *Email Templates*: crea una plantilla con **To email** = `{{to_email}}` y usa estas variables en el cuerpo:
    `{{to_name}}`, `{{code}}`, `{{event_name}}`, `{{event_date}}`. Copia el *Template ID* a `VITE_EMAILJS_TEMPLATE_ID`.
@@ -57,7 +59,7 @@ Falta añadir la pista: sigue las instrucciones de `public/audio/CREDITS.txt` y 
 1. En GitHub: *Settings → Pages → Source*: **GitHub Actions**.
 2. *Settings → Secrets and variables → Actions → Variables*: crea una variable por cada `VITE_*` de `.env.example`
    (excepto `VITE_BASE`, que el workflow calcula desde el nombre del repo).
-3. Haz push a `main`: el workflow `.github/workflows/deploy.yml` compila y publica.
+3. Haz push a `develop` (la rama principal): el workflow `.github/workflows/deploy.yml` compila y publica.
 4. Abre `https://<usuario>.github.io/<repo>/confirmar` y recarga: debe seguir abriendo (gracias a `404.html`).
 
 Si usas un dominio propio en la raíz, cambia `pathSegmentsToKeep` a `0` en `public/404.html` y usa `VITE_BASE=/`.
