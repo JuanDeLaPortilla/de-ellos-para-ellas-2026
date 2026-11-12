@@ -1,0 +1,95 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // The admin is a Firebase Auth user with a hand-made document in admins/{uid}.
+    // Neither the email nor the uid appears in this (public) file.
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function hasSession() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/sessions/$(request.auth.uid));
+    }
+
+    function validRsvpData(data) {
+      return data.firstName is string && data.firstName.size() > 0 && data.firstName.size() <= 60
+        && data.lastName is string && data.lastName.size() > 0 && data.lastName.size() <= 60
+        && data.age is int && data.age >= 5 && data.age <= 99
+        && data.email is string && data.email.size() <= 120
+        && data.attending is bool
+        && data.code is string && data.code.size() == 8
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /rsvps/{email} {
+      allow read: if isAdmin();
+
+      // Anyone may create the RSVP if it does not exist yet; the document ID
+      // must match the email stored inside it.
+      allow create: if validRsvpData(request.resource.data)
+        && request.resource.data.keys().hasOnly(
+             ['firstName', 'lastName', 'age', 'email', 'attending', 'code', 'createdAt', 'updatedAt'])
+        && request.resource.data.email == email
+        && email == email.lower();
+
+      // Updates may only touch the editable fields; `code` and `email` never change.
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['firstName', 'lastName', 'age', 'attending', 'updatedAt'])
+        && request.resource.data.firstName is string
+        && request.resource.data.firstName.size() > 0
+        && request.resource.data.firstName.size() <= 60
+        && request.resource.data.lastName is string
+        && request.resource.data.lastName.size() > 0
+        && request.resource.data.lastName.size() <= 60
+        && request.resource.data.age is int
+        && request.resource.data.age >= 5
+        && request.resource.data.age <= 99
+        && request.resource.data.attending is bool
+        && request.resource.data.updatedAt is timestamp;
+
+      allow delete: if false;
+    }
+
+    match /sessions/{uid} {
+      allow read: if false;
+
+      // An anonymous user redeems a code by writing a session whose email and
+      // code match an RSVP that is attending. The RSVP itself stays unreadable.
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['email', 'code', 'createdAt'])
+        && request.resource.data.email is string
+        && request.resource.data.createdAt is timestamp
+        && exists(/databases/$(database)/documents/rsvps/$(request.resource.data.email))
+        && get(/databases/$(database)/documents/rsvps/$(request.resource.data.email)).data.code
+             == request.resource.data.code
+        && get(/databases/$(database)/documents/rsvps/$(request.resource.data.email)).data.attending == true;
+
+      allow update, delete: if false;
+    }
+
+    match /photos/{photoId} {
+      allow read: if true;
+
+      allow create: if (hasSession() || isAdmin())
+        && request.resource.data.keys().hasOnly(['url', 'publicId', 'authorName', 'createdAt'])
+        && request.resource.data.url is string
+        && request.resource.data.url.matches('^https://res\\.cloudinary\\.com/.*')
+        && request.resource.data.publicId is string
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() <= 60
+        && request.resource.data.createdAt is timestamp;
+
+      allow update, delete: if false;
+    }
+
+    match /admins/{uid} {
+      allow read, write: if false;
+    }
+  }
+}

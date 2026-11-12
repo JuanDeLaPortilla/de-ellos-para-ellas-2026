@@ -1,0 +1,63 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-rose: #e8a0b4;
+  --color-rose-pale: #fbe9ee;
+  --color-plum: #6b3a5b;
+  --color-plum-soft: #8f5a7e;
+  --color-sage: #9db8a0;
+  --color-sage-pale: #e6efe7;
+  --color-cream: #fbf5ee;
+  --color-paper: #fffdf9;
+  --color-gold: #c9a25b;
+  --color-ink: #3b2c39;
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-script: 'Parisienne', 'Cormorant Garamond', cursive;
+  --font-sans: 'Jost', 'Helvetica Neue', sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    color: var(--color-ink);
+    background-color: var(--color-cream);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-full bg-plum px-7 py-3 text-sm font-medium tracking-wider text-cream uppercase transition hover:bg-plum-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-full border border-plum px-7 py-3 text-sm font-medium tracking-wider text-plum uppercase transition hover:bg-plum hover:text-cream;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-plum/25 bg-paper px-4 py-3 text-ink outline-none transition focus:border-plum focus:ring-2 focus:ring-rose/50;
+  }
+
+  .card {
+    @apply rounded-3xl border border-rose/40 bg-paper/90 p-6 shadow-sm backdrop-blur-sm sm:p-10;
+  }
+
+  .heading {
+    @apply font-display text-4xl font-medium text-plum sm:text-5xl;
+  }
+}

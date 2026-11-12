@@ -1,0 +1,178 @@
+.fl-bloom,
+.fl-leaf,
+.fl-breathe {
+    transform-box: fill-box;
+  will-change: transform;
+}
+
+.fl-bloom {
+  transform-origin: 50% 92%;
+  animation: fl-sway var(--t, 6s) var(--d, 0s) ease-in-out infinite alternate;
+}
+
+.fl-leaf {
+  transform-origin: 50% 100%;
+  animation: fl-sway-wide var(--t, 6s) var(--d, 0s) ease-in-out infinite alternate;
+}
+
+.fl-breathe {
+  transform-origin: 50% 100%;
+  animation: fl-breathe 13s ease-in-out infinite alternate;
+}
+
+@keyframes fl-sway {
+  from {
+    transform: rotate(-3.2deg) translateY(0.6px);
+  }
+  to {
+    transform: rotate(3.4deg) translateY(-0.9px);
+  }
+}
+
+@keyframes fl-sway-wide {
+  from {
+    transform: rotate(-6.5deg) scaleY(0.99);
+  }
+  to {
+    transform: rotate(6deg) scaleY(1.01);
+  }
+}
+
+@keyframes fl-breathe {
+  from {
+    transform: rotate(-1.1deg) scale(0.995);
+  }
+  to {
+    transform: rotate(1.3deg) scale(1.01);
+  }
+}
+
+.fl-corner {
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.fl-corner--tl {
+  top: -1.5rem;
+  left: -2.5rem;
+}
+.fl-corner--tr {
+  top: -1.5rem;
+  right: -2.5rem;
+}
+.fl-corner--bl {
+  bottom: -1.5rem;
+  left: -2.5rem;
+}
+.fl-corner--br {
+  bottom: -1.5rem;
+  right: -2.5rem;
+}
+
+.fl-branch {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.fl-branch--left {
+  left: -1.2rem;
+}
+.fl-branch--right {
+  right: -1.2rem;
+}
+
+.fl-divider {
+  display: block;
+  margin-inline: auto;
+}
+
+@media (max-width: 860px) {
+  .fl-branch {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .fl-corner {
+    width: 46vw !important;
+  }
+  .fl-corner--tl,
+  .fl-corner--tr {
+    top: -0.75rem;
+  }
+  .fl-corner--tl,
+  .fl-corner--bl {
+    left: -3.5rem;
+  }
+  .fl-corner--tr,
+  .fl-corner--br {
+    right: -3.5rem;
+  }
+}
+
+.petals {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.petal {
+  position: absolute;
+  top: -8vh;
+  will-change: transform, opacity;
+  animation: petal-fall linear infinite;
+}
+
+.petal svg {
+  animation: petal-spin ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+@keyframes petal-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: var(--o, 0.75);
+  }
+  50% {
+    transform: translate3d(var(--drift, 40px), 50vh, 0);
+  }
+  92% {
+    opacity: var(--o, 0.75);
+  }
+  100% {
+    transform: translate3d(calc(var(--drift, 40px) * -0.6), 108vh, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes petal-spin {
+  from {
+    transform: rotate(-70deg) scaleX(0.7);
+  }
+  to {
+    transform: rotate(80deg) scaleX(1);
+  }
+}
+
+/* Reduced motion: still bouquets, no petals */
+@media (prefers-reduced-motion: reduce) {
+  .fl-bloom,
+  .fl-leaf,
+  .fl-breathe,
+  .petal,
+  .petal svg {
+    animation: none !important;
+  }
+  .petals {
+    display: none;
+  }
+}
