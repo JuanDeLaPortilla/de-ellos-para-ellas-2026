@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore'
+import { useSearchParams } from 'react-router-dom'
 import { FloralDivider } from '../components/decor/Flora.jsx'
 import PhotoUploadModal from '../components/PhotoUploadModal.jsx'
 import { db, firebaseReady } from '../lib/firebase.js'
@@ -27,8 +28,19 @@ function useColumnCount(ref) {
 export default function PhotoWall() {
   const { status, isAdmin, hasSession } = useAuthUser()
   // Set right after a successful redeem, before the auth hook re-reads the session.
-  const [redeemedName, setRedeemedName] = useState(null)
+  const [redeemed, setRedeemed] = useState(false)
   const [uploadOpen, setUploadOpen] = useState(false)
+  // A code in the link (/mural?codigo=XXXX, e.g. from a QR) is used by the modal without showing the field; it is never redeemed by itself.
+  const linkCode = useSearchParams()[0].get('codigo')?.trim() ?? ''
+  const [linkHandled, setLinkHandled] = useState(false)
+
+  const canUpload = isAdmin || hasSession || redeemed
+
+  // Opens the modal once, after auth has settled, only if the visitor cannot upload yet.
+  if (firebaseReady && linkCode && !linkHandled && status !== 'loading') {
+    setLinkHandled(true)
+    if (!canUpload) setUploadOpen(true)
+  }
 
   if (!firebaseReady) {
     return (
@@ -39,14 +51,13 @@ export default function PhotoWall() {
     )
   }
 
-  const canUpload = isAdmin || hasSession || redeemedName !== null
-  const authorName = isAdmin ? ADMIN_AUTHOR : (redeemedName ?? 'Invitada')
 
   return (
     <div className="grid gap-8 2xl:gap-14">
       <div className="text-center">
         <h1 className="heading">Mural de fotos</h1>
         <FloralDivider width={240} className="mt-3" />
+        <p className="mt-4">Toca el botón + para subir tus fotos.</p>
       </div>
 
       <Gallery />
@@ -68,8 +79,9 @@ export default function PhotoWall() {
           onClose={() => setUploadOpen(false)}
           canUpload={canUpload}
           authLoading={status === 'loading'}
-          authorName={authorName}
-          onRedeemed={setRedeemedName}
+          authorName={isAdmin ? ADMIN_AUTHOR : null}
+          onRedeemed={() => setRedeemed(true)}
+          initialCode={linkCode}
         />
       )}
     </div>

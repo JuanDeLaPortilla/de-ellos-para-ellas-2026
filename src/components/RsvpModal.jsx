@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { FloralDivider } from './decor/Flora.jsx'
 import { firebaseReady } from '../lib/firebase.js'
 import { saveRsvp } from '../lib/rsvp.js'
-import { emailReady, sendAccessCode } from '../lib/email.js'
+import { emailReady, sendConfirmation } from '../lib/email.js'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -97,12 +97,11 @@ export default function RsvpModal({ onClose }) {
         attending,
       })
 
-      // The code email is only sent when the RSVP is created, never on update (even for a first
-      // "no", so a guest who later changes to "yes" already has her code).
+      // The email is only sent when the RSVP is created, never on update.
       let emailSent = false
       if (saved.created && emailReady) {
         try {
-          await sendAccessCode({ email: saved.email, firstName: form.firstName.trim(), code: saved.code })
+          await sendConfirmation({ email: saved.email, firstName: form.firstName.trim() })
           emailSent = true
         } catch {
           emailSent = false
@@ -165,12 +164,11 @@ export default function RsvpModal({ onClose }) {
             {result.emailAttempted &&
               (result.emailSent ? (
                 <p className="mt-3 animate-text-in" style={delay(3)}>
-                  Te enviamos un correo con tu código de acceso para subir fotos al mural. Revisa también la
-                  carpeta de spam.
+                  Te enviamos un correo de confirmación. Revisa también la carpeta de spam.
                 </p>
               ) : (
                 <p className="mt-3 animate-text-in" style={delay(3)}>
-                  No pudimos enviar el correo con tu código. Escríbenos y te lo reenviamos.
+                  No pudimos enviar el correo de confirmación.
                 </p>
               ))}
             {!result.created && (

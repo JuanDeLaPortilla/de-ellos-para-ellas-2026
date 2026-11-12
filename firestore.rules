@@ -21,7 +21,6 @@ service cloud.firestore {
         && data.age is int && data.age >= 5 && data.age <= 99
         && data.email is string && data.email.size() <= 120
         && data.attending is bool
-        && data.code is string && data.code.size() == 8
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
     }
@@ -33,11 +32,11 @@ service cloud.firestore {
       // must match the email stored inside it.
       allow create: if validRsvpData(request.resource.data)
         && request.resource.data.keys().hasOnly(
-             ['firstName', 'lastName', 'age', 'email', 'attending', 'code', 'createdAt', 'updatedAt'])
+             ['firstName', 'lastName', 'age', 'email', 'attending', 'createdAt', 'updatedAt'])
         && request.resource.data.email == email
         && email == email.lower();
 
-      // Updates may only touch the editable fields; `code` and `email` never change.
+      // Updates may only touch the editable fields; `email` never changes.
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['firstName', 'lastName', 'age', 'attending', 'updatedAt'])
         && request.resource.data.firstName is string
@@ -58,19 +57,24 @@ service cloud.firestore {
     match /sessions/{uid} {
       allow read: if false;
 
-      // An anonymous user redeems a code by writing a session whose email and
-      // code match an RSVP that is attending. The RSVP itself stays unreadable.
+      // An anonymous user redeems the single event code by writing a session whose
+      // code matches config/photoWall. That document is never readable by clients.
+      // If it does not exist, get() fails and the redeem is rejected.
       allow create: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['email', 'code', 'createdAt'])
-        && request.resource.data.email is string
+        && request.resource.data.keys().hasOnly(['code', 'createdAt'])
+        && request.resource.data.code is string
         && request.resource.data.createdAt is timestamp
-        && exists(/databases/$(database)/documents/rsvps/$(request.resource.data.email))
-        && get(/databases/$(database)/documents/rsvps/$(request.resource.data.email)).data.code
-             == request.resource.data.code
-        && get(/databases/$(database)/documents/rsvps/$(request.resource.data.email)).data.attending == true;
+        && request.resource.data.code
+             == get(/databases/$(database)/documents/config/photoWall).data.code;
 
       allow update, delete: if false;
+    }
+
+    // Holds the event code (config/photoWall.code), created by hand in the console.
+    // Only the rules above read it, through get().
+    match /config/{doc} {
+      allow read, write: if false;
     }
 
     match /photos/{photoId} {

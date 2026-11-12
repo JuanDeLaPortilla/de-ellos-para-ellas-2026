@@ -2,7 +2,6 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { signInAnonymously } from 'firebase/auth'
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase.js'
-import { normalizeEmail } from '../lib/rsvp.js'
 import { cloudinaryReady, uploadPhoto } from '../lib/cloudinary.js'
 import { markSessionRedeemed } from '../lib/useAuthUser.js'
 
@@ -12,13 +11,37 @@ const CLOSE_MS = 220
 const CASCADE_START = 0.2
 const CASCADE_STEP = 0.08
 const delay = (index) => ({ animationDelay: `${CASCADE_START + index * CASCADE_STEP}s` })
+/** Photos uploaded per selection; the rest are skipped to spare the phone's memory and time. */
+const MAX_PHOTOS = 10
+/** The guest's name is remembered on this device, so it comes pre-filled next time. */
+const NAME_KEY = 'photo-author-name:v1'
+
+function readName() {
+  try {
+    return localStorage.getItem(NAME_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+function saveName(name) {
+  try {
+    localStorage.setItem(NAME_KEY, name)
+  } catch {
+    // Storage can be unavailable (private mode); the name is then asked again next time.
+  }
+}
 
 /**
- * Photo wall upload in a native modal dialog: redeem the access code, then upload photos.
+ * Photo wall upload in a native modal dialog, a single form: name, event code (only if the visitor
+ * has no session yet) and the photos. Submitting redeems the code if needed, then uploads.
+ * `authorName` is a fixed author (the admin) that hides the name field.
+ * `initialCode` is a code that came in the link: the field is hidden and the code is used as is,
+ * unless the redeem fails, in which case the field appears empty so the guest can type another one.
  * Mounted only while open, so closing it discards what was typed and the upload state.
  * `onClose` unmounts it; the modal calls it after any allowed close.
  */
-export default function PhotoUploadModal({ onClose, canUpload, authLoading, authorName, onRedeemed }) {
+export default function PhotoUploadModal({ onClose, canUpload, authLoading, authorName, onRedeemed, initialCode = '' }) {
   const dialogRef = useRef(null)
   const titleId = useId()
   const [busy, setBusy] = useState(false)
@@ -60,18 +83,21 @@ export default function PhotoUploadModal({ onClose, canUpload, authLoading, auth
     setConfirmingDiscard(true)
   }
 
-  let screen
-  if (authLoading) {
-    screen = (
-      <p className="text-center animate-text-in" style={delay(2)}>
-        Cargando…
-      </p>
-    )
-  } else if (canUpload) {
-    screen = <PhotoUploader authorName={authorName} onBusyChange={setBusy} />
-  } else {
-    screen = <RedeemForm onRedeemed={onRedeemed} onBusyChange={setBusy} onDirtyChange={setDirty} />
-  }
+  const screen = authLoading ? (
+    <p className="text-center animate-text-in" style={delay(2)}>
+      Cargando…
+    </p>
+  ) : (
+    <PhotoForm
+      canUpload={canUpload}
+      authorName={authorName}
+      initialCode={initialCode}
+      onRedeemed={onRedeemed}
+      onBusyChange={setBusy}
+      onDirtyChange={setDirty}
+      onDone={finish}
+    />
+  )
 
   return (
     <dialog
@@ -122,7 +148,7 @@ export default function PhotoUploadModal({ onClose, canUpload, authLoading, auth
         {/* Kept mounted (only hidden) while the discard prompt shows, so "Seguir editando" keeps the data. */}
         <div hidden={confirmingDiscard} className="mx-auto max-w-md text-center">
           <h2 id={titleId} className="heading animate-text-in" style={delay(0)}>
-            Subir una foto
+            Subir fotos
           </h2>
           <div className="mt-8">{screen}</div>
         </div>
@@ -139,100 +165,84 @@ function useReport(callback, value) {
   }, [callback, value])
 }
 
-function RedeemForm({ onRedeemed, onBusyChange, onDirtyChange }) {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [code, setCode] = useState('')
-  const [state, setState] = useState('idle') // idle | checking | error
+function PhotoForm({ canUpload, authorName, initialCode, onRedeemed, onBusyChange, onDirtyChange, onDone }) {
+  const inputRef = useRef(null)
+  const [storedName] = useState(readName)
+  const [name, setName] = useState(storedName)
+  const [code, setCode] = useState(initialCode)
+  const [showCode, setShowCode] = useState(initialCode === '')
+  const [files, setFiles] = useState([])
+  const [state, setState] = useState('idle') // idle | working | error
+  const [phase, setPhase] = useState('checking') // checking | uploading
+  const [progress, setProgress] = useState({ done: 0, total: 0 })
+  // What to tell the guest while the modal stays open: a wrong code, or failed/skipped photos.
+  const [notice, setNotice] = useState(null)
 
-  useReport(onBusyChange, state === 'checking')
-  useReport(onDirtyChange, name !== '' || email !== '' || code !== '')
+  const needsCode = !canUpload
+  const fixedAuthor = authorName != null
+  const working = state === 'working'
+
+  useReport(onBusyChange, working)
+  useReport(
+    onDirtyChange,
+    files.length > 0 ||
+      (!fixedAuthor && name !== storedName) ||
+      (needsCode && showCode && code !== '' && code !== initialCode),
+  )
 
   async function handleSubmit(e) {
     e.preventDefault()
-    setState('checking')
-    try {
-      const credential = auth.currentUser ?? (await signInAnonymously(auth)).user
-      await setDoc(doc(db, 'sessions', credential.uid), {
-        email: normalizeEmail(email),
-        code: code.trim().toUpperCase(),
-        createdAt: serverTimestamp(),
-      })
-      markSessionRedeemed(credential.uid)
-      onRedeemed(name.trim() || 'Invitada')
-    } catch {
-      // The rules reject wrong codes, unknown emails and guests who are not attending.
-      setState('error')
+    if (files.length === 0) return
+
+    const selected = files.slice(0, MAX_PHOTOS)
+    const skipped = files.length - selected.length
+    const author = fixedAuthor ? authorName : name.trim()
+    setNotice(null)
+    setPhase('checking')
+    setState('working')
+
+    if (needsCode) {
+      try {
+        const credential = auth.currentUser ?? (await signInAnonymously(auth)).user
+        await setDoc(doc(db, 'sessions', credential.uid), {
+          code: code.trim().toUpperCase(),
+          createdAt: serverTimestamp(),
+        })
+        markSessionRedeemed(credential.uid)
+      } catch {
+        // The rules reject a code that differs from config/photoWall (or a missing config document).
+        if (!showCode) {
+          setCode('')
+          setShowCode(true)
+        }
+        setNotice({ kind: 'code' })
+        setState('error')
+        return
+      }
+      onRedeemed()
     }
-  }
 
-  return (
-    <form onSubmit={handleSubmit} className="grid gap-4 text-left">
-      <p className="text-center animate-text-in" style={delay(2)}>
-        Si confirmaste tu asistencia, escribe tu correo y el código que te enviamos para subir fotos.
-      </p>
-      <label className="grid gap-1 animate-text-in" style={delay(3)}>
-        <span className="text-sm tracking-wide text-plum-soft uppercase">Tu nombre</span>
-        <input
-          className="field"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={60}
-          autoComplete="given-name"
-        />
-      </label>
-      <label className="grid gap-1 animate-text-in" style={delay(4)}>
-        <span className="text-sm tracking-wide text-plum-soft uppercase">Correo electrónico</span>
-        <input
-          className="field"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-        />
-      </label>
-      <label className="grid gap-1 animate-text-in" style={delay(5)}>
-        <span className="text-sm tracking-wide text-plum-soft uppercase">Código de acceso</span>
-        <input
-          className="field tracking-[0.3em] uppercase"
-          required
-          maxLength={8}
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          autoComplete="off"
-        />
-      </label>
-      {state === 'error' && (
-        <p role="alert" className="rounded-xl bg-rose-pale p-3 text-center text-sm text-red-800">
-          El correo o el código no son correctos, o aún no has confirmado tu asistencia.
-        </p>
-      )}
-      <button className="btn animate-text-in" style={delay(6)} type="submit" disabled={state === 'checking'}>
-        {state === 'checking' ? 'Verificando…' : 'Desbloquear subida'}
-      </button>
-    </form>
-  )
-}
-
-function PhotoUploader({ authorName, onBusyChange }) {
-  const inputRef = useRef(null)
-  const [state, setState] = useState('idle') // idle | uploading | done | error
-
-  useReport(onBusyChange, state === 'uploading')
-
-  async function handleChange(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setState('uploading')
-    try {
-      await uploadPhoto(file, authorName)
-      setState('done')
-    } catch {
-      setState('error')
-    } finally {
-      if (inputRef.current) inputRef.current.value = ''
+    if (!fixedAuthor) saveName(author)
+    setPhase('uploading')
+    let failed = 0
+    for (let i = 0; i < selected.length; i += 1) {
+      setProgress({ done: i, total: selected.length })
+      try {
+        await uploadPhoto(selected[i], author)
+      } catch {
+        failed += 1
+      }
     }
+
+    if (inputRef.current) inputRef.current.value = ''
+    setFiles([])
+    if (failed === 0 && skipped === 0) {
+      setState('idle')
+      onDone()
+      return
+    }
+    setNotice({ kind: 'summary', uploaded: selected.length - failed, total: selected.length, failed, skipped })
+    setState('error')
   }
 
   if (!cloudinaryReady) {
@@ -243,25 +253,85 @@ function PhotoUploader({ authorName, onBusyChange }) {
     )
   }
 
+  let hint = `Puedes elegir hasta ${MAX_PHOTOS} fotos.`
+  if (files.length > MAX_PHOTOS) hint = `Elegiste ${files.length} fotos; solo se subirán las primeras ${MAX_PHOTOS}.`
+
+  let buttonText = 'Subir fotos'
+  if (working) {
+    buttonText = phase === 'checking' ? 'Verificando…' : `Subiendo ${Math.min(progress.done + 1, progress.total)} de ${progress.total}…`
+  }
+
+  let message = hint
+  if (notice?.kind === 'summary') {
+    message = [
+      notice.failed > 0
+        ? `Se subieron ${notice.uploaded} de ${notice.total}. No pudimos subir ${notice.failed}; inténtalo de nuevo.`
+        : `Se subieron ${notice.uploaded} de ${notice.total + notice.skipped}.`,
+      notice.skipped > 0 && `Elegiste más de ${MAX_PHOTOS} fotos; las otras ${notice.skipped} no se subieron.`,
+    ]
+      .filter(Boolean)
+      .join(' ')
+  }
+
   return (
-    <div className="grid justify-items-center gap-3 animate-text-in" style={delay(2)}>
-      <input
-        ref={inputRef}
-        id="photo-input"
-        type="file"
-        accept="image/*"
-        className="sr-only"
-        onChange={handleChange}
-        disabled={state === 'uploading'}
-      />
-      <label htmlFor="photo-input" className={`btn cursor-pointer ${state === 'uploading' ? 'opacity-60' : ''}`}>
-        {state === 'uploading' ? 'Subiendo…' : 'Subir una foto'}
-      </label>
-      <p aria-live="polite" className="text-sm">
-        {state === 'done' && '¡Listo! Tu foto ya está en el mural.'}
-        {state === 'error' && 'No pudimos subir la foto. Inténtalo de nuevo.'}
-        {state === 'idle' && `Publicarás como «${authorName}».`}
-      </p>
-    </div>
+    <form onSubmit={handleSubmit} className="grid gap-4 text-left">
+      {!fixedAuthor && (
+        <label className="grid gap-1 animate-text-in" style={delay(2)}>
+          <span className="text-sm tracking-wide text-plum-soft uppercase">Tu nombre</span>
+          <input
+            className="field"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={60}
+            autoComplete="given-name"
+            disabled={working}
+          />
+        </label>
+      )}
+      {needsCode && showCode && (
+        <label className="grid gap-1 animate-text-in" style={delay(3)}>
+          <span className="text-sm tracking-wide text-plum-soft uppercase">Código del evento</span>
+          <input
+            className="field tracking-[0.3em] uppercase"
+            required
+            maxLength={12}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            autoComplete="off"
+            disabled={working}
+          />
+        </label>
+      )}
+
+      <div className="grid justify-items-center gap-2 animate-text-in" style={delay(4)}>
+        <input
+          ref={inputRef}
+          id="photo-input"
+          type="file"
+          accept="image/*"
+          multiple
+          className="sr-only"
+          onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+          disabled={working}
+        />
+        <label htmlFor="photo-input" className={`btn-outline cursor-pointer ${working ? 'opacity-60' : ''}`}>
+          {files.length === 0 ? 'Elegir fotos' : `${files.length} ${files.length === 1 ? 'foto elegida' : 'fotos elegidas'}`}
+        </label>
+        <p aria-live="polite" className="text-center text-sm">
+          {message}
+        </p>
+      </div>
+
+      {notice?.kind === 'code' && (
+        <p role="alert" className="rounded-xl bg-rose-pale p-3 text-center text-sm text-red-800">
+          El código no es correcto. Revísalo e inténtalo de nuevo.
+        </p>
+      )}
+
+      <button className="btn animate-text-in" style={delay(5)} type="submit" disabled={working || files.length === 0}>
+        {buttonText}
+      </button>
+    </form>
   )
 }
