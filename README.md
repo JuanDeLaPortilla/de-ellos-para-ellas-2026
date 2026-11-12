@@ -61,7 +61,7 @@ Falta añadir la pista: sigue las instrucciones de `public/audio/CREDITS.txt` y 
    (excepto `VITE_BASE`, que el workflow calcula desde el nombre del repo).
 3. Trabaja en `develop` (no publica nada). Para publicar, fusiona `develop` en `main` y haz push a `main`: el workflow
    `.github/workflows/deploy.yml` compila y publica. `main` es la rama de producción y la única admitida por el entorno `github-pages`.
-4. Abre `https://<usuario>.github.io/<repo>/confirmar` y recarga: debe seguir abriendo (gracias a `404.html`).
+4. Abre `https://<usuario>.github.io/<repo>/mural` y recarga: debe seguir abriendo (gracias a `404.html`).
 
 Si usas un dominio propio en la raíz, cambia `pathSegmentsToKeep` a `0` en `public/404.html` y usa `VITE_BASE=/`.
 
@@ -70,7 +70,6 @@ Si usas un dominio propio en la raíz, cambia `pathSegmentsToKeep` a `0` en `pub
 | Ruta         | Contenido                                           |
 | ------------ | --------------------------------------------------- |
 | `/`          | Invitación, cuenta regresiva y lugar                |
-| `/confirmar` | Formulario de asistencia                            |
 | `/mural`     | Galería en vivo; subida con código o como admin (se comparte por URL directa, no hay barra de navegación) |
 | `/admin`     | Login, lista de confirmaciones y totales            |
 

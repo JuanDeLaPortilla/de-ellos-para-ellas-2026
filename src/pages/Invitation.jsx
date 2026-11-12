@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import Countdown from '../components/Countdown.jsx'
 import Envelope from '../components/Envelope.jsx'
+import RsvpModal from '../components/RsvpModal.jsx'
 import { CornerBouquet, FloralDivider } from '../components/decor/Flora.jsx'
 import { event } from '../config/event.config.js'
 import { useMusic } from '../lib/music.jsx'
@@ -38,6 +38,7 @@ export default function Invitation() {
   // text cascade running (reload with the key), 'open' = card with all texts shown.
   const [stage, setStage] = useState(() => (hasOpenedKey() ? 'revealing' : 'closed'))
   const [hasKey, setHasKey] = useState(hasOpenedKey)
+  const [rsvpOpen, setRsvpOpen] = useState(false)
 
   useEffect(() => {
     if (stage !== 'opening' && stage !== 'revealing') return undefined
@@ -114,12 +115,14 @@ export default function Invitation() {
           </div>
 
           <div className={`mt-10 flex items-center justify-center ${c(6)}`} style={d(6)}>
-            <Link to="/confirmar" className="btn">
+            <button type="button" className="btn" onClick={() => setRsvpOpen(true)}>
               Confirmar asistencia
-            </Link>
+            </button>
           </div>
         </div>
       </section>
+
+      {rsvpOpen && <RsvpModal onClose={() => setRsvpOpen(false)} />}
 
       {stage === 'open' && hasKey && (
         <div className="mt-4 text-center">

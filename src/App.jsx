@@ -1,7 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import Invitation from './pages/Invitation.jsx'
-import Confirm from './pages/Confirm.jsx'
 import PhotoWall from './pages/PhotoWall.jsx'
 import Admin from './pages/Admin.jsx'
 
@@ -10,7 +9,6 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Invitation />} />
-        <Route path="confirmar" element={<Confirm />} />
         <Route path="mural" element={<PhotoWall />} />
         <Route path="admin" element={<Admin />} />
         <Route path="*" element={<Invitation />} />
