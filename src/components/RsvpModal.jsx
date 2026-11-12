@@ -131,7 +131,7 @@ export default function RsvpModal({ onClose }) {
           <button type="button" className="btn" onClick={() => setConfirmingDiscard(false)}>
             Seguir editando
           </button>
-          <button type="button" className="btn" onClick={finish}>
+          <button type="button" className="btn-outline" onClick={finish}>
             Descartar
           </button>
         </div>
@@ -224,7 +224,7 @@ export default function RsvpModal({ onClose }) {
             </Field>
           </div>
 
-          <div className="grid gap-5 animate-text-in sm:grid-cols-[8rem_1fr]" style={delay(4)}>
+          <div className="grid gap-5 animate-text-in items-start sm:grid-cols-[8rem_1fr]" style={delay(4)}>
             <Field label="Edad" error={errors.age}>
               <input
                 className="field"
@@ -319,7 +319,7 @@ export default function RsvpModal({ onClose }) {
 
 function Field({ label, error, children }) {
   return (
-    <label className="grid gap-1">
+    <label className="grid content-start gap-1">
       <span className="text-sm tracking-wide text-plum-soft uppercase">{label}</span>
       {children}
       {error && <span className="text-sm text-red-700">{error}</span>}
