@@ -303,9 +303,9 @@ export default function RsvpModal({ onClose }) {
           aria-label="Cerrar"
           onClick={requestClose}
           disabled={sending || closing}
-          className="absolute top-2 right-2 flex h-10 w-10 items-center justify-center rounded-full text-plum transition hover:bg-rose-pale disabled:opacity-40"
+          className="btn-icon absolute top-2 right-2"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <svg className="pointer-events-none" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>
         </button>

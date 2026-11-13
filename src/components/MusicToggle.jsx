@@ -21,9 +21,9 @@ export default function MusicToggle() {
         onClick={toggle}
         aria-pressed={playing}
         aria-label={playing ? 'Silenciar la música' : 'Activar la música'}
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-gold bg-paper text-plum shadow-md transition hover:bg-rose-pale focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum"
+        className="btn-icon shrink-0"
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg className="pointer-events-none" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M9 18V5l11-2v13" />
           <circle cx="6" cy="18" r="3" />
           <circle cx="17" cy="16" r="3" />

@@ -67,9 +67,9 @@ export default function PhotoWall() {
         type="button"
         aria-label="Subir una foto"
         onClick={() => setUploadOpen(true)}
-        className="fixed right-4 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 flex h-12 w-12 items-center justify-center rounded-full border border-gold bg-plum text-paper shadow-lg transition hover:bg-plum-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum"
+        className="btn-icon btn-icon-solid fixed right-4 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30"
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+        <svg className="pointer-events-none" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
           <path d="M12 5v14M5 12h14" />
         </svg>
       </button>

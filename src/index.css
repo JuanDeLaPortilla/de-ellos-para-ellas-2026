@@ -194,6 +194,15 @@
     @apply inline-flex items-center justify-center rounded-full border border-plum px-7 py-3 text-sm font-medium tracking-wider text-plum uppercase transition hover:bg-plum hover:text-cream;
   }
 
+  .btn-icon {
+    @apply flex h-12 w-12 touch-manipulation items-center justify-center rounded-full border border-gold bg-paper text-plum shadow-md transition hover:bg-rose-pale focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum disabled:opacity-40;
+  }
+
+  /* Filled variant: combine with .btn-icon (must stay after it so its colors win). */
+  .btn-icon-solid {
+    @apply bg-plum text-paper shadow-lg hover:bg-plum-soft;
+  }
+
   .field {
     @apply w-full rounded-xl border border-plum/25 bg-paper px-4 py-3 text-ink outline-none transition focus:border-plum focus:ring-2 focus:ring-rose/50;
   }
