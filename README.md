@@ -64,6 +64,20 @@ Todas las invitadas suben fotos con **un único código del evento**. Vive en Fi
 
 Si `config/photoWall` no existe, nadie puede subir fotos.
 
+### QR del mural
+
+Para proyectar o imprimir el enlace con el código, genera el QR (el código se pasa como argumento; nunca se escribe en el repo):
+
+```bash
+npm run qr -- <CÓDIGO>                           # usa la URL base del script
+npm run qr -- <CÓDIGO> https://otro.dominio/ruta # otra URL base (2.º argumento)
+QR_BASE_URL=https://otro.dominio/ruta npm run qr -- <CÓDIGO>
+```
+
+Crea en `generated/` (carpeta ignorada por git) `qr-mural.png` (1200 × 1200, negro sobre blanco) y `tarjeta-qr.html`, una tarjeta
+autocontenida con la línea gráfica de la invitación. Ábrela con doble clic en el navegador y pulsa F11 para proyectarla; los datos
+del evento salen de `src/config/event.config.js`. Ábrela una vez con internet para que el navegador guarde las fuentes.
+
 ## 5. Música de fondo
 
 Falta añadir la pista: sigue las instrucciones de `public/audio/CREDITS.txt` y guarda el archivo como

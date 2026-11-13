@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{EVENT_NAME}} · QR del mural</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Parisienne&family=Jost:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        /* Valores copiados del @theme de src/index.css */
+        --rose: #e8a0b4;
+        --rose-pale: #fbe9ee;
+        --plum: #6b3a5b;
+        --plum-soft: #8f5a7e;
+        --sage-pale: #e6efe7;
+        --cream: #fbf5ee;
+        --paper: #fffdf9;
+        --gold: #c9a25b;
+        --ink: #3b2c39;
+
+        --font-display: 'Cormorant Garamond', Georgia, serif;
+        --font-script: 'Parisienne', 'Cormorant Garamond', cursive;
+        --font-sans: 'Jost', 'Helvetica Neue', sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100vw;
+        height: 100dvh;
+        overflow: hidden;
+      }
+
+      body {
+        background: radial-gradient(ellipse at top left, var(--rose-pale), transparent 55%),
+          radial-gradient(ellipse at bottom right, var(--sage-pale), transparent 55%), var(--cream);
+        color: var(--ink);
+        font-family: var(--font-sans);
+      }
+
+      .card {
+        width: 100vw;
+        height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6vmin;
+        padding: 4vmin 6vmin;
+      }
+
+      .text {
+        flex: 0 1 auto;
+        max-width: 48vw;
+        text-align: center;
+      }
+
+      .corner {
+        position: fixed;
+        width: clamp(120px, 30vmin, 420px);
+        pointer-events: none;
+      }
+
+      .corner-tl { top: 0; left: 0; }
+      .corner-tr { top: 0; right: 0; }
+      .corner-bl { bottom: 0; left: 0; }
+      .corner-br { bottom: 0; right: 0; }
+
+      h1 {
+        font-family: var(--font-script);
+        font-weight: 400;
+        font-size: clamp(2.4rem, 11vmin, 8rem);
+        line-height: 1.1;
+        color: var(--plum);
+      }
+
+      .divider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.4vmin;
+        margin: 3vmin auto;
+        width: min(60%, 40vmin);
+      }
+
+      .divider::before,
+      .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--gold);
+      }
+
+      .divider span {
+        width: 1.2vmin;
+        height: 1.2vmin;
+        background: var(--gold);
+        transform: rotate(45deg);
+      }
+
+      .lead {
+        font-family: var(--font-display);
+        font-style: italic;
+        font-size: clamp(1.1rem, 4.2vmin, 3.2rem);
+        line-height: 1.25;
+        color: var(--plum);
+      }
+
+      .qr-block {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2.5vmin;
+      }
+
+      .qr-frame {
+        background: #ffffff;
+        padding: 1.5vmin;
+        border: 1px solid var(--gold);
+        border-radius: 2vmin;
+        box-shadow: 0 1vmin 4vmin rgba(107, 58, 91, 0.15);
+      }
+
+      .qr-frame img {
+        display: block;
+        width: 52vmin;
+        height: 52vmin;
+        image-rendering: pixelated;
+      }
+
+      /* Pantallas verticales: columna, QR de al menos el 60 % del ancho */
+      @media (orientation: portrait) {
+        .card {
+          flex-direction: column;
+          gap: 3vmin;
+          padding: 4vmin;
+        }
+
+        .text {
+          flex: 0 0 auto;
+          max-width: 90vw;
+        }
+
+        .qr-frame img {
+          width: 66vw;
+          height: 66vw;
+          max-height: 40dvh;
+          max-width: 40dvh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    {{FLORAL}}
+    <main class="card">
+      <section class="text">
+        <h1>De ellos para ellas</h1>
+        <div class="divider" aria-hidden="true"><span></span></div>
+        <p class="lead">Escanea y comparte las fotos de la noche</p>
+      </section>
+      <section class="qr-block">
+        <div class="qr-frame">
+          <img src="{{QR_DATA_URI}}" alt="Código QR del mural de fotos" />
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

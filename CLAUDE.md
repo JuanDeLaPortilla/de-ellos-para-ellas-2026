@@ -31,6 +31,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - `admins/{uid}`: created by hand in the Firebase console; the admin is an email/password Auth user whose UID has a document here.
 - When adding or changing fields on `rsvps` or `photos`, update both the client code and the `hasOnly` key lists and validators in `firestore.rules`. The rules must then be redeployed manually with `npx firebase-tools deploy --only firestore:rules` (`firebase.json` and `.firebaserc` are versioned); they are not deployed by CI.
 
+- **Event QR**: `npm run qr -- <CODE> [BASE_URL]` runs `scripts/generate-qr.js` (devDependency `qrcode`) and writes `generated/qr-mural.png` and `generated/tarjeta-qr.html` (filled from `scripts/qr-card.template.html` plus `src/config/event.config.js`). `generated/` is git-ignored because it contains the event code; the code is only ever passed as an argument and must never be written in the repo.
+
 ## Gotchas
 
 - The repo is public and every `VITE_*` value ends up in the published JS. Never add the Cloudinary API secret or any admin password.
