@@ -7,4 +7,5 @@ export const event = {
     name: 'IACYM San Felipe',
     mapUrl: 'https://maps.app.goo.gl/TCgsP132jeEjmWvP7',
   },
+  dressCode: 'Elegante sport', // UI text, Spanish; empty string hides the block
 }

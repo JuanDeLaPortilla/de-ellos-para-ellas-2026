@@ -7,11 +7,11 @@ import { event } from '../config/event.config.js'
 import { useMusic } from '../lib/music.jsx'
 
 const OPENED_KEY = 'envelope-opened:v1'
-/** After the envelope: the last text block starts at 2.5 s and takes 0.5 s, with a small margin. */
-const OPENING_MS = 3100
+/** After the envelope: the last text block starts at 2.6 s and takes 0.5 s, with a small margin. */
+const OPENING_MS = 3200
 /** The card frame appears at 1.8 s, once the envelope has faded out. Texts start right after, every 0.1 s. */
 const OPENING_CASCADE_START = 1.9
-/** Reload with the key present: same cascade, no envelope (last block starts at 0.8 s). */
+/** Reload with the key present: same cascade, no envelope (last block starts at 0.9 s). */
 const REVEALING_MS = 1500
 const REVEALING_CASCADE_START = 0.2
 const CASCADE_STEP = 0.1
@@ -66,13 +66,14 @@ export default function Invitation() {
   if (stage === 'closed') return <Envelope onOpen={openEnvelope} />
 
   return (
-    <>
+    <div className="flex min-h-[calc(100dvh-8.5rem)] flex-col justify-center pt-14">
       {stage === 'opening' && <Envelope opening />}
+      <div className="relative">
       <section className={`card relative overflow-hidden text-center ${stage === 'opening' ? 'animate-card-in' : ''}`}>
         <CornerBouquet corner="tl" width={220} />
         <CornerBouquet corner="br" width={220} />
 
-        <div className="relative z-10 py-10 sm:py-16">
+        <div className="relative z-10 py-10 sm:py-6">
           <p className={`text-sm tracking-[0.3em] text-plum-soft uppercase ${c(0)}`} style={d(0)}>
             Estás invitada a
           </p>
@@ -88,11 +89,11 @@ export default function Invitation() {
             <p className="font-display text-2xl text-plum-soft">{event.timeText}</p>
           </div>
 
-          <div className={`mt-10 ${c(4)}`} style={d(4)}>
+          <div className={`mt-10 sm:mt-8 ${c(4)}`} style={d(4)}>
             <Countdown targetISO={event.dateISO} />
           </div>
 
-          <div className={`mt-10 ${c(5)}`} style={d(5)}>
+          <div className={`mt-10 sm:mt-8 ${c(5)}`} style={d(5)}>
             <div className="flex items-center justify-center gap-1">
               <p className="text-sm tracking-[0.3em] text-plum-soft uppercase">Lugar</p>
               <a
@@ -114,7 +115,14 @@ export default function Invitation() {
             <p className="mt-2 font-display text-3xl text-ink">{event.venue.name}</p>
           </div>
 
-          <div className={`mt-10 flex items-center justify-center ${c(6)}`} style={d(6)}>
+          {event.dressCode?.trim() && (
+            <div className={`mt-10 sm:mt-8 ${c(6)}`} style={d(6)}>
+              <p className="text-sm tracking-[0.3em] text-plum-soft uppercase">Vestimenta</p>
+              <p className="mt-2 font-display text-3xl text-ink">{event.dressCode}</p>
+            </div>
+          )}
+
+          <div className={`mt-10 sm:mt-8 flex items-center justify-center ${c(7)}`} style={d(7)}>
             <button type="button" className="btn" onClick={() => setRsvpOpen(true)}>
               Confirmar asistencia
             </button>
@@ -122,10 +130,8 @@ export default function Invitation() {
         </div>
       </section>
 
-      {rsvpOpen && <RsvpModal onClose={() => setRsvpOpen(false)} />}
-
       {stage === 'open' && hasKey && (
-        <div className="mt-4 text-center">
+        <div className="absolute inset-x-0 top-full mt-4 text-center">
           <button
             type="button"
             onClick={() => setStage('closed')}
@@ -135,6 +141,9 @@ export default function Invitation() {
           </button>
         </div>
       )}
-    </>
+      </div>
+
+      {rsvpOpen && <RsvpModal onClose={() => setRsvpOpen(false)} />}
+    </div>
   )
 }
